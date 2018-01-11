@@ -12,14 +12,16 @@ func NewGosoraMsgProducer() *GosoraMsgProducer {
 // TODO: BBCode
 // TODO: HTML
 // TODO: Markdown. Let's forget this exists for now, I'm thinking of crunching this down to HTML on Gosora's side anyway.
-func (lex *GosoraMsgProducer) Run(msg string) common.Tree {
+func (lex *GosoraMsgProducer) Run(msg string) common.Node {
 	var runes = []rune(msg)
 	var ast = &common.Ast{}
 	parse(ast, runes, 0, len(runes))
 	return ast
 }
 
-func parse(tree common.Tree, runes []rune, i int, maxLen int) {
+func parse(tree common.Node, runes []rune, i int, maxLen int) {
+	var buffer string
+	
 	var stepForward = func(i int, step int, maxLen int) int {
 		i += step
 		if i < maxLen {
@@ -34,7 +36,7 @@ func parse(tree common.Tree, runes []rune, i int, maxLen int) {
 			if phrase[0] == runes[i] {
 				i++
 				if (i + len(phrase) >= maxLen {
-					continue
+					continue OuterZoom
 				}
 				for pi := 1; pi < len(phrase); pi++ {
 					if phrase[pi] != runes[i] {
@@ -48,36 +50,38 @@ func parse(tree common.Tree, runes []rune, i int, maxLen int) {
 		return i
 	}
 
+	var addChild = func(node Node, skip int, maxLen int) {
+		tree.AddChild(&common.Text{Body:buffer})
+		buffer = ""
+		i += skip
+		parse(node,runes,i,maxLen)
+		tree.AddChild(node)
+	}
+	
+	OuterParse:
 	for ; i < maxLen; i++ {
 		char := runes[i]
 		if char == '[' {
 			switch {
 			case peekMatch(i, "b]", runes):
-				i += 2
 				locMax := zoomToMatch(i, []rune("[/b]"), runes, maxLen)
-				boldNode := &common.Bold{}
-				parse(boldNode,runes,i,locMax)
-				tree.AddChild(boldNode)
+				addChild(&common.Bold{},2,locMax)
+				continue OuterParse
 			case peekMatch(i, "i]", runes):
-				i += 2
 				locMax := zoomToMatch(i, []rune("[/i]"), runes, maxLen)
-				italicNode := &common.Italic{}
-				parse(italicNode,runes,i,locMax)
-				tree.AddChild(italicNode)
+				addChild(&common.Italic{},2,locMax)
+				continue OuterParse
 			case peekMatch(i, "u]", runes):
-				i += 2
 				locMax := zoomToMatch(i, []rune("[/u]"), runes, maxLen)
-				underNode := &common.Underline{}
-				parse(underNode,runes,i,locMax)
-				tree.AddChild(underNode)
+				addChild(&common.Underline{},2,locMax)
+				continue OuterParse
 			case peekMatch(i, "s]", runes):
-				i += 2
 				locMax := zoomToMatch(i, []rune("[/s]"), runes, maxLen)
-				strikeNode := &common.Strikethrough{}
-				parse(strikeNode,runes,i,locMax)
-				tree.AddChild(strikeNode)
+				addChild(&common.Strikethrough{},2,locMax)
+				continue OuterParse
 			}
 		}
+		buffer += string(char)
 	}
 }
 
