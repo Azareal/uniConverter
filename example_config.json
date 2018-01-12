@@ -1,0 +1,16 @@
+{
+	"Database": {
+		"Adapter":"mysql",
+		"DBName":"gosora",
+		"Username":"gosora_user",
+		"Password":"password"
+	},
+	"From": {
+		"Name":"gosora",
+		"Version":"0.0.0"
+	},
+	"To": {
+		"Name":"gosora",
+		"Version":"0.0.0"
+	}
+}
