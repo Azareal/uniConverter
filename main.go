@@ -58,4 +58,8 @@ func main() {
 	converter := converter.NewConverter()
 	converter.From(fromSoft)
 	converter.To(toSoft)
+	err = converter.Convert()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
